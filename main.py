@@ -5,6 +5,7 @@ import nltk
 from nltk.corpus import stopwords
 import matplotlib.pyplot as plt
 
+# Update stopwords library
 nltk.download('stopwords')
 
 # Magic Numbers
@@ -15,6 +16,9 @@ NUMBER_OF_TOP_WORDS = 20
 
 # Function that returns the top x comments of the post
 def get_comments_text(post_url, num_comments):
+    """Extracts the text of the top comments for a given reddit
+    post URL and returns a list of the text in the comments.
+    """
     comment_response = requests.get(post_url, headers={'User-agent': 'Mozilla/5.0'})
     comment_soup = BeautifulSoup(comment_response.content, 'html.parser')
     comments = comment_soup.find_all('div', {'class': 'md'})
@@ -24,8 +28,10 @@ def get_comments_text(post_url, num_comments):
     return comments_list
 
 
-# Function to get the data list from a given subreddit
 def get_subreddit_data(subreddit_name):
+    """Extracts the top posts and comments for a given subreddit
+    and returns a list of tuples with post titles and comment text.
+    """
     # Get the website using the requests library
     subreddit_url = "https://old.reddit.com/r/" + subreddit_name + "/top/?sort=top&t=week"
     response = requests.get(subreddit_url, headers={"User-Agent": "Mozilla/5.0"})
@@ -48,6 +54,9 @@ def get_subreddit_data(subreddit_name):
 
 
 def process_text(content):
+    """Processes the given text by removing non-alphabetic and
+    stop words and converting all characters to lowercase.
+    """
     # Convert all non-alphabetic and spacing characters
     # to a single whitespace
     non_alphabetic = r'[^a-zA-Z]+'
@@ -59,13 +68,16 @@ def process_text(content):
     # Tokenise the content into a list of words
     content_list = re.split(' ', content)
 
-    # Remove stop words
+    # Remove stop words and the word 'like' (as it appears alot everywhere)
     stop_words = set(stopwords.words('english'))
-    return [word for word in content_list if len(word) > 2 and word not in stop_words]
+    return [word for word in content_list if len(word) > 2
+            and word not in stop_words
+            and word != 'like']
 
 
-# Function to get processed word list from the tuple list
 def get_processed_data(data_tuples):
+    """Extracts all text from the given list of tuples
+    and processes it into a list of words."""
     # Make a large string of all the data extracted
     complete_string = ""
     for post_text in data_tuples:
@@ -75,8 +87,10 @@ def get_processed_data(data_tuples):
     return process_text(complete_string)
 
 
-# Function to get word counts dictionary
 def get_sorted_counts(words):
+    """ Returns a sorted list of tuples with each unique
+    word in the given list of words and its frequency.
+    """
     word_counts = {}
     for word in words:
         if word in word_counts:
@@ -86,8 +100,10 @@ def get_sorted_counts(words):
     return sorted(word_counts.items(), key=lambda x: x[1], reverse=True)
 
 
-# Function to create the frequency graph
 def create_word_frequency_graph(words, num_top_words, filename):
+    """Creates a bar graph of the frequency of the top num words in
+    the given list of words and saves it to the given filename.
+    """
     word_counts = get_sorted_counts(words)
     top_words = word_counts[:num_top_words]
     x_values = [word[0] for word in top_words]
@@ -103,9 +119,15 @@ def create_word_frequency_graph(words, num_top_words, filename):
 
 # Ask the user for the subreddit
 subreddit = input("Enter the name of the subreddit to analyse: ")
+
+# Extract the posts and comments data
 print("Extracting posts and comments...")
 data = get_subreddit_data(subreddit)
+
+# Perform processing to the text
 print("Processing text...")
 words = get_processed_data(data)
+
+# Save the output graph
 filename = input("Enter filename for output graph: ")
 create_word_frequency_graph(words, NUMBER_OF_TOP_WORDS, filename)
