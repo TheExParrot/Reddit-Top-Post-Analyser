@@ -17,19 +17,24 @@ def get_comments_text(post_url, num_comments):
     return comments_list
 
 
-# Get the website using the requests library
-url = "https://old.reddit.com/r/worldnews/top/?sort=top&t=week"
-response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+# Function to get the data list from a given subreddit
+def get_subreddit_data(subreddit_name):
+    # Get the website using the requests library
+    subreddit_url = "https://old.reddit.com/r/" + subreddit_name + "/top/?sort=top&t=week"
+    response = requests.get(subreddit_url, headers={"User-Agent": "Mozilla/5.0"})
 
-# Obtain the html object from the subreddit
-soup = BeautifulSoup(response.content, "html.parser")
+    # Obtain the html object from the subreddit
+    soup = BeautifulSoup(response.content, "html.parser")
 
-# Scrape the posts page and filter out promoted posts/advertisements
-posts = soup.find_all("div", class_="top-matter")
-non_promoted_posts = [post for post in posts if "promoted by"
-                      not in post.find("p", class_="tagline").text.strip()]
+    # Scrape the posts page and filter out promoted posts/advertisements
+    posts = soup.find_all("div", class_="top-matter")
+    non_promoted_posts = [post for post in posts if "promoted by"
+                          not in post.find("p", class_="tagline").text.strip()]
 
-# Iterate through the top x posts and return the content of the top y comments
-urls = []
-for i in range(NUMBER_OF_POSTS):
-    urls.append(non_promoted_posts[i].find("a", class_="bylink comments may-blank")['href'])
+    # Iterate through the top x posts and obtain the content of the top y comments
+    data = []
+    for i in range(NUMBER_OF_POSTS):
+        url = non_promoted_posts[i].find("a", class_="bylink comments may-blank")['href']
+        data.append((non_promoted_posts[i].find("a", class_="title").text.strip(),
+                     get_comments_text(url, NUMBER_OF_COMMENTS)))
+    return data
